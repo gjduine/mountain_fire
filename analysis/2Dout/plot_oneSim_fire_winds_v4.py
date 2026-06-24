@@ -75,6 +75,14 @@ stations = {
     "START": (34.318,  -118.968, "none"),
 }
 
+# Cross-section lines through START point
+cs_center_lat =  34.318
+cs_center_lon = -118.968
+cross_sections = {
+    "35deg": {"angle": 35, "half_length_km": 70, "color": "black", "linestyle": "-",  "linewidth": 2.5},
+    "50deg": {"angle": 50, "half_length_km": 20, "color": "red",   "linestyle": "--", "linewidth": 2.0},
+}
+
 # Process each timestep
 for t in hours:
     # Dictionary to store data for each simulation
@@ -223,8 +231,21 @@ for t in hours:
                          transform=ccrs.PlateCarree()
                  )
 
+            # --- Cross-section angle lines through START point ---
+            for cs in cross_sections.values():
+                ang_rad = np.radians(cs["angle"])
+                half_km = cs["half_length_km"]
+                d_lat = half_km * np.cos(ang_rad) / 111.0
+                d_lon = half_km * np.sin(ang_rad) / (111.0 * np.cos(np.radians(cs_center_lat)))
+                ax.plot([cs_center_lon - d_lon, cs_center_lon + d_lon],
+                        [cs_center_lat - d_lat, cs_center_lat + d_lat],
+                        color=cs["color"], linewidth=cs["linewidth"], linestyle=cs["linestyle"],
+                        transform=ccrs.PlateCarree(), zorder=5,
+                        label=f'{cs["angle"]}° from N ({half_km} km)')
+            ax.legend(fontsize=12, loc='lower left')
+
             # plot lake fire perimeter after three days
-#            ax.plot(polygon_lons, polygon_lats, color='white', linewidth=2, 
+#            ax.plot(polygon_lons, polygon_lats, color='white', linewidth=2,
 #                    transform=ccrs.PlateCarree(), zorder=10)
 
             # Set labels and limits
