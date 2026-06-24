@@ -63,8 +63,10 @@ hours = pd.date_range(start_time, end_time, freq="1H")
 lat_min, lat_max =   33.21,  35.3 #34.65, 34.86
 lon_min, lon_max = -120.3,-117.45 #-120.183, -119.90
 
-dy = np.arange(33.3,35.3,0.2)
-dx = np.arange(-120.0,-117.5,0.5)
+lat_tick_step = 0.2
+lon_tick_step = 0.5
+dy = np.arange(np.ceil(lat_min / lat_tick_step) * lat_tick_step, lat_max, lat_tick_step)
+dx = np.arange(np.ceil(lon_min / lon_tick_step) * lon_tick_step, lon_max, lon_tick_step)
 
 # Plot settings
 TERRAIN_CMAP = 'terrain'
