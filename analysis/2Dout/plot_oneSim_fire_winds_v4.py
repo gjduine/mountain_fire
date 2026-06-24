@@ -74,8 +74,10 @@ OUTPUT_DPI = 150
 
 # Station locations
 stations = {
-    "START": (34.318,  -118.968, "none"),
+    "START": (34.318,  -118.968, "black"),
+    "SPOT":  (34.2528, -119.0284, "purple"),
 }
+
 
 # Cross-section lines through START point
 cs_center_lat =  34.318
@@ -121,7 +123,7 @@ for t in hours:
     )
 
 
-    for itime in range(n_times):
+    for itime in range(1): # range(n_times):
         fig, axes = plt.subplots(
                 1, 1, figsize=(12, 8),
 #            1, 2, figsize=(16, 8),
@@ -227,8 +229,8 @@ for t in hours:
             for name, (lat, lon, color) in stations.items():
                  ax.plot(lon, lat,
                          marker="*",
-                         markerfacecolor=color,
-                         markeredgecolor="red",
+                         markerfacecolor="none",
+                         markeredgecolor=color,
                          markersize=20,
                          markeredgewidth=2.0,
                          linestyle="none",
