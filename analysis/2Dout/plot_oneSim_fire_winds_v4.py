@@ -36,37 +36,35 @@ def wrf_time_to_datetime(ds, itime):
 #polygon_lats = polygon_df['Latitude'].values
 
 # === SETTINGS ===
-start_time = pd.Timestamp("2024-11-05 18:00")
-end_time = pd.Timestamp("2024-11-09 00:00")
+start_time = pd.Timestamp("2024-11-06 06:00")
+end_time = pd.Timestamp("2024-11-07 18:00")
 
 #simName="fuel5_ign0945Z"
 
 # Configuration for each simulation
 simulations = {
-    "1km": {
-        "wrf_dir": Path("/glade/derecho/scratch/gduine/mountain_fire/1km/"),
-        "domain": "d03",
+    "111m": {
+        "wrf_dir": Path("/glade/derecho/scratch/gduine/mountain_fire/111m/ifire2/"),
+        "domain": "d04",
         "wind_arrow_skip": 10,
         "wind_arrow_scale": 200,
-        "title": "1 km grid"
+        "title": "111 m grid"
     }
 }
 
 
-out_dir = Path(f"./winds_1km")
+out_dir = Path(f"./winds_hfx_111m")
 out_dir.mkdir(exist_ok=True)
 
 # Hourly wrfout files
 hours = pd.date_range(start_time, end_time, freq="1H")
 
 # Subdomain bounds
-lat_min, lat_max =   33.21,  35.3 #34.65, 34.86
-lon_min, lon_max = -120.3,-117.45 #-120.183, -119.90
+lat_min, lat_max =   34.19161,  34.39659 #34.65, 34.86
+lon_min, lon_max = -119.2194,-118.8461 #-120.183, -119.90
 
-lat_tick_step = 0.2
-lon_tick_step = 0.5
-dy = np.arange(np.ceil(lat_min / lat_tick_step) * lat_tick_step, lat_max, lat_tick_step)
-dx = np.arange(np.ceil(lon_min / lon_tick_step) * lon_tick_step, lon_max, lon_tick_step)
+dy = np.arange(34.2,34.4,0.05)
+dx = np.arange(-119.20,-118.9,0.1)
 
 # Plot settings
 TERRAIN_CMAP = 'terrain'
@@ -76,18 +74,7 @@ OUTPUT_DPI = 150
 stations = {
     "START": (34.318,  -118.968, "black"),
     "SPOT":  (34.2528, -119.0284, "purple"),
-}
-
-
-# Cross-section lines through START point
-cs_center_lat =  34.318
-cs_center_lon = -118.968
-cross_sections = {
-    "35deg_long":  {"angle": 35, "half_length_km": 70, "color": "black", "linestyle": "-",  "linewidth": 2.5},
-    "35deg_short": {"angle": 35, "half_length_km": 20, "color": "red", "linestyle": "--", "linewidth": 2.0},
-    "50deg_long":  {"angle": 50, "half_length_km": 70, "color": "black",   "linestyle": "-",  "linewidth": 2.5},
-    "50deg_short": {"angle": 50, "half_length_km": 20, "color": "red",   "linestyle": "--", "linewidth": 2.0},
-}
+        }
 
 # Process each timestep
 for t in hours:
@@ -123,7 +110,7 @@ for t in hours:
     )
 
 
-    for itime in range(1): # range(n_times):
+    for itime in range(n_times):
         fig, axes = plt.subplots(
                 1, 1, figsize=(12, 8),
 #            1, 2, figsize=(16, 8),
@@ -146,6 +133,8 @@ for t in hours:
 
 
         print(f"Working on plot {tWRFstrPDT}")
+        # Set common scale (0 to max value found)
+        vmin, vmax = 0, 300000 #hfx_max
         
         # Plot each simulation
         for idx, (sim_name, data) in enumerate(sim_data.items()):
@@ -162,6 +151,17 @@ for t in hours:
             ds = data["ds"]
             config = data["config"]
             
+            # Fire variables (fine mesh)
+            hfx = ds.variables["FGRNHFX"][itime, :, :]
+            flat = ds.variables["FXLAT"][0, :, :]
+            flon = ds.variables["FXLONG"][0, :, :]
+            
+
+            # Mask points outside subdomain
+            mask = (flat >= lat_min) & (flat <= lat_max) & (flon >= lon_min) & (flon <= lon_max)
+            hfx_sub = np.where(mask, hfx, np.nan)
+            flat_sub = np.where(mask, flat, np.nan)
+            flon_sub = np.where(mask, flon, np.nan)
             
 
             # --- WRF variables ---
@@ -189,7 +189,7 @@ for t in hours:
             # --- Terrain ---
             ax.contour(
                 to_np(lons), to_np(lats), to_np(hgt),
-                levels=np.arange(100, 3000, 200),
+                levels=np.arange(100, 3000, 100),
                 colors="k", linewidths=0.6,
                 transform=ccrs.PlateCarree(), zorder=2
             )
@@ -226,45 +226,47 @@ for t in hours:
                 zorder=4
             )
             
-            for name, (lat, lon, color) in stations.items():
-                 ax.plot(lon, lat,
-                         marker="*",
-                         markerfacecolor="none",
-                         markeredgecolor=color,
-                         markersize=20,
-                         markeredgewidth=2.0,
-                         linestyle="none",
-                         transform=ccrs.PlateCarree()
-                 )
+            # Plot fire perimeter as contour line
+            fire_perimeter = np.where(hfx > 1000, 1, 0)  # Adjust threshold as needed
+            ax.contour(flon, flat, fire_perimeter, levels=[0.5], 
+                      colors='red', linewidths=2.5, zorder=5,
+                       transform=ccrs.PlateCarree())
 
-            # --- Cross-section angle lines through START point ---
-            for cs in cross_sections.values():
-                ang_rad = np.radians(cs["angle"])
-                half_km = cs["half_length_km"]
-                half_km_label = half_km*2
-                d_lat = half_km * np.cos(ang_rad) / 111.0
-                d_lon = half_km * np.sin(ang_rad) / (111.0 * np.cos(np.radians(cs_center_lat)))
-                ax.plot([cs_center_lon - d_lon, cs_center_lon + d_lon],
-                        [cs_center_lat - d_lat, cs_center_lat + d_lat],
-                        color=cs["color"], linewidth=cs["linewidth"], linestyle=cs["linestyle"],
-                        transform=ccrs.PlateCarree(), zorder=5,
-                        label=f'{cs["angle"]}° from N ({half_km_label} km)')
-            ax.legend(fontsize=12, loc='lower right')
+            # Plot stations
+       #     for name, (lat, lon) in stations.items():
+       #         ax.plot(lon, lat, marker="^", markerfacecolor="none", 
+       #                 markeredgecolor="white", markersize=12, linewidth=2.5,
+       #                 transform=ccrs.PlateCarree())
+       #         ax.text(lon+0.002, lat+0.002, name, fontsize=14, color="white", 
+       #                 ha="left", va="bottom", weight="bold",
+       #                 transform=ccrs.PlateCarree())
+        
+            for name, (lat, lon, color) in stations.items():
+                ax.plot(lon, lat,
+                        marker="o",
+                        markerfacecolor=color,
+                        markeredgecolor="black",
+                        markersize=20,
+                        markeredgewidth=2.0,
+                        linestyle="none",
+                        transform=ccrs.PlateCarree()
+                )
 
             # plot lake fire perimeter after three days
-#            ax.plot(polygon_lons, polygon_lats, color='white', linewidth=2,
+#            ax.plot(polygon_lons, polygon_lats, color='white', linewidth=2, 
 #                    transform=ccrs.PlateCarree(), zorder=10)
 
             # Set labels and limits
 #            ax.set_title(config["title"])
             ax.set_title(f"\n{tWRFstrPDT} PDT")
-            ax.set_xlabel('Longitude', fontsize=16)
-            ax.set_ylabel('Latitude', fontsize=16)
+            ax.set_xlabel('Longitude $^\circ$', fontsize=16)
+            ax.set_ylabel('Latitude $^\circ$', fontsize=16)
             ax.tick_params(labelsize=14)
 
         # Overall title
+        
         plt.tight_layout()
-        plt.savefig(out_dir / f"wind_1km_{tWRFstrPDT_fName}_PDT.png", 
+        plt.savefig(out_dir / f"wind_fire_comparison_v2_{tWRFstrPDT_fName}_PDT.png", 
                    dpi=OUTPUT_DPI, bbox_inches='tight')
         plt.close()
     
