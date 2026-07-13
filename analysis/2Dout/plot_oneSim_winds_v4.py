@@ -140,12 +140,12 @@ for t in hours:
         if ts is None:
             continue
 
-        tsPDT = ts - pd.Timedelta(hours=7)
-        tWRFstrPDT = tsPDT.strftime('%Y-%m-%d %H:%M')
-        tWRFstrPDT_fName = tsPDT.strftime('%Y-%m-%d_%H%M')
+        tsPST = ts - pd.Timedelta(hours=8)
+        tWRFstrPST = tsPST.strftime('%Y-%m-%d %H:%M')
+        tWRFstrPST_fName = tsPST.strftime('%Y-%m-%d_%H%M')
 
 
-        print(f"Working on plot {tWRFstrPDT}")
+        print(f"Working on plot {tWRFstrPST}")
         
         # Plot each simulation
         for idx, (sim_name, data) in enumerate(sim_data.items()):
@@ -155,7 +155,7 @@ for t in hours:
                 ax.text(0.5, 0.5, f"Data not available\n({sim_name})", 
                        ha='center', va='center', transform=ax.transAxes, fontsize=14)
 #                ax.set_title(simulations[sim_name]["title"])
-                ax.set_title(f"\n{tWRFstrPDT} PDT")
+                ax.set_title(f"\n{tWRFstrPST} PST")
                 continue
 
             
@@ -257,14 +257,14 @@ for t in hours:
 
             # Set labels and limits
 #            ax.set_title(config["title"])
-            ax.set_title(f"\n{tWRFstrPDT} PDT")
+            ax.set_title(f"\n{tWRFstrPST} PST")
             ax.set_xlabel('Longitude', fontsize=16)
             ax.set_ylabel('Latitude', fontsize=16)
             ax.tick_params(labelsize=14)
 
         # Overall title
         plt.tight_layout()
-        plt.savefig(out_dir / f"wind_1km_{tWRFstrPDT_fName}_PDT.png", 
+        plt.savefig(out_dir / f"wind_1km_{tWRFstrPST_fName}_PST.png", 
                    dpi=OUTPUT_DPI, bbox_inches='tight')
         plt.close()
     

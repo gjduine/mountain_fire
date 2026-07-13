@@ -64,7 +64,7 @@ lat_min, lat_max =   34.19161,  34.39659 #34.65, 34.86
 lon_min, lon_max = -119.2194,-118.8461 #-120.183, -119.90
 
 dy = np.arange(34.2,34.4,0.05)
-dx = np.arange(-119.20,-118.9,0.1)
+dx = np.arange(-119.20,-118.89,0.1)
 
 # Plot settings
 TERRAIN_CMAP = 'terrain'
@@ -127,12 +127,12 @@ for t in hours:
         if ts is None:
             continue
 
-        tsPDT = ts - pd.Timedelta(hours=7)
-        tWRFstrPDT = tsPDT.strftime('%Y-%m-%d %H:%M')
-        tWRFstrPDT_fName = tsPDT.strftime('%Y-%m-%d_%H%M')
+        tsPST = ts - pd.Timedelta(hours=8)
+        tWRFstrPST = tsPST.strftime('%Y-%m-%d %H:%M')
+        tWRFstrPST_fName = tsPST.strftime('%Y-%m-%d_%H%M')
 
 
-        print(f"Working on plot {tWRFstrPDT}")
+        print(f"Working on plot {tWRFstrPST}")
         # Set common scale (0 to max value found)
         vmin, vmax = 0, 300000 #hfx_max
         
@@ -144,7 +144,7 @@ for t in hours:
                 ax.text(0.5, 0.5, f"Data not available\n({sim_name})", 
                        ha='center', va='center', transform=ax.transAxes, fontsize=14)
 #                ax.set_title(simulations[sim_name]["title"])
-                ax.set_title(f"\n{tWRFstrPDT} PDT")
+                ax.set_title(f"\n{tWRFstrPST} PST")
                 continue
 
             
@@ -258,7 +258,7 @@ for t in hours:
 
             # Set labels and limits
 #            ax.set_title(config["title"])
-            ax.set_title(f"\n{tWRFstrPDT} PDT")
+            ax.set_title(f"\n{tWRFstrPST} PST")
             ax.set_xlabel('Longitude $^\circ$', fontsize=16)
             ax.set_ylabel('Latitude $^\circ$', fontsize=16)
             ax.tick_params(labelsize=14)
@@ -266,7 +266,7 @@ for t in hours:
         # Overall title
         
         plt.tight_layout()
-        plt.savefig(out_dir / f"wind_fire_comparison_v2_{tWRFstrPDT_fName}_PDT.png", 
+        plt.savefig(out_dir / f"wind_fire_comparison_v2_{tWRFstrPST_fName}_PST.png", 
                    dpi=OUTPUT_DPI, bbox_inches='tight')
         plt.close()
     
