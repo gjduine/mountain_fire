@@ -189,7 +189,7 @@ for t in hours:
 
     for itime in range(n_times): #range(1):#
         ts               = wrf_time_to_datetime(ds, itime)
-        tsPST            = ts - pd.Timedelta(hours=7)
+        tsPST            = ts - pd.Timedelta(hours=8)
         tWRFstrPST       = tsPST.strftime('%Y-%m-%d %H:%M')
         tWRFstrPST_fName = tsPST.strftime('%Y-%m-%d_%H%M')
 
