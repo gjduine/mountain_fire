@@ -93,6 +93,22 @@ for t in hours:
 if fuel_indexed is None:
     raise RuntimeError("No wrfout files found.")
 
+# ── Check whether NFUEL_CAT changes over time ──────────────────────────────────
+all_files = sorted(wrf_dir.glob(f"wrfout_{domain}_*"))
+if len(all_files) >= 2:
+    with Dataset(all_files[0]) as ds_first, Dataset(all_files[-1]) as ds_last:
+        fuelvar   = "FUEL_CAT" if "FUEL_CAT" in ds_first.variables else "NFUEL_CAT"
+        nfuel_t0  = ds_first.variables[fuelvar][0, :, :]
+        nfuel_t1  = ds_last.variables[fuelvar][0, :, :]
+        n_changed = int(np.sum(nfuel_t0 != nfuel_t1))
+        if n_changed == 0:
+            print(f"NFUEL_CAT is STATIC — identical in first and last file ({all_files[0].name} vs {all_files[-1].name})")
+        else:
+            print(f"NFUEL_CAT CHANGED in {n_changed} cells between first and last file!")
+            print(f"  → Could be used as a burned-area indicator.")
+else:
+    print("Not enough files to compare NFUEL_CAT over time.")
+
 # ── Define fire-front methods ──────────────────────────────────────────────────
 # Each method: variable name, how to derive a 2D mask/field, contour spec
 # Availability is checked at runtime against available_vars
