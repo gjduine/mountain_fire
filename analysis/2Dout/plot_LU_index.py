@@ -69,7 +69,7 @@ dx = np.arange(-119.05, -118.95, 0.03)
 stations = {
     "START":       (34.318,    -118.968,   "black"),
     "SPOT":        (34.2528,   -119.0284,  "red"),
-    "Spot Valley": (34.271191, -119.015999,"purple"),
+    "Spot Valley": (34.281191, -119.015999,"purple"),
 }
 
 out_dir = Path(".")
