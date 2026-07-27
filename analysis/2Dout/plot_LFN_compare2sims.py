@@ -35,7 +35,9 @@ lon_min, lon_max = -119.05, -118.95
 dy = np.arange(34.25,  34.35,  0.02)
 dx = np.arange(-119.05, -118.95, 0.03)
 
-OUTPUT_DPI = 150
+OUTPUT_DPI       = 150
+wind_arrow_skip  = 10
+wind_arrow_scale = 200
 out_dir    = Path("./LFN_compare")
 out_dir.mkdir(exist_ok=True)
 
@@ -123,6 +125,8 @@ for t in hours:
         hgt  = getvar(dsets[simulations[0]["label"]], "HGT", timeidx=0)
         cart_proj = get_cartopy(hgt)
         lats, lons = latlon_coords(hgt)
+        u10 = to_np(getvar(dsets[simulations[0]["label"]], "U10", timeidx=itime))
+        v10 = to_np(getvar(dsets[simulations[0]["label"]], "V10", timeidx=itime))
 
         # ── Figure ────────────────────────────────────────────────────────────
         fig, ax = plt.subplots(1, 1, figsize=(10, 8),
@@ -146,6 +150,18 @@ for t in hours:
                    levels=np.arange(100, 3000, 100),
                    colors='k', linewidths=0.5, alpha=0.5,
                    transform=ccrs.PlateCarree(), zorder=2)
+
+        # Wind arrows (from first sim)
+        ax.quiver(
+            to_np(lons)[::wind_arrow_skip, ::wind_arrow_skip],
+            to_np(lats)[::wind_arrow_skip, ::wind_arrow_skip],
+            u10[::wind_arrow_skip, ::wind_arrow_skip],
+            v10[::wind_arrow_skip, ::wind_arrow_skip],
+            transform=ccrs.PlateCarree(),
+            scale=wind_arrow_scale,
+            width=0.003, headwidth=4, headlength=5,
+            color='black', alpha=0.7, zorder=3
+        )
 
         # LFN=0 contour for each simulation
         for sim in simulations:
