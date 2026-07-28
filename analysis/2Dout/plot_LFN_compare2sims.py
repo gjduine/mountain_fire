@@ -2,8 +2,10 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
+import matplotlib.patheffects as pe
 import numpy as np
 import pandas as pd
+import json
 from netCDF4 import Dataset
 from pathlib import Path
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
@@ -39,13 +41,14 @@ dx = np.arange(-119.05, -118.95, 0.03)
 OUTPUT_DPI       = 150
 wind_arrow_skip  = 10
 wind_arrow_scale = 200
+geojson_path = Path("/glade/work/gduine/mountain_fire/perimeter/mountain_fire_perimeter.geojson")
 out_dir    = Path("./LFN_compare")
 out_dir.mkdir(exist_ok=True)
 
 stations = {
-    "START":       (34.318,    -118.968,   "black"),
+    "START":       (34.318,    -118.968,   "magenta"),
     "SPOT":        (34.2528,   -119.0284,  "red"),
-    "Spot Valley": (34.281191, -119.015999,"purple"),
+    "Spot Valley": (34.281191, -119.015999,"limegreen"),
 }
 
 # ── Fuel colormap ──────────────────────────────────────────────────────────────
@@ -64,6 +67,18 @@ def wrf_time_to_datetime(ds, itime):
     tchar = ds.variables["Times"][itime]
     return pd.to_datetime(b"".join(tchar).decode("utf-8"), format="%Y-%m-%d_%H:%M:%S")
 
+
+# ── Observed fire perimeter ────────────────────────────────────────────────────
+fire_polygons = []
+if geojson_path.exists():
+    with open(geojson_path) as f:
+        gj = json.load(f)
+    for feat in gj["features"]:
+        coords = feat["geometry"]["coordinates"][0]  # outer ring
+        fire_polygons.append(coords)
+    print(f"Loaded {len(fire_polygons)} fire perimeter polygons from GeoJSON")
+else:
+    print(f"Fire perimeter GeoJSON not found: {geojson_path}")
 
 # ── Static: load fuels + fire-grid coords from first sim, first file ───────────
 fuel_indexed = flat_fuel = flon_fuel = None
@@ -179,12 +194,20 @@ for t in hours:
                        linestyles=sim["ls"],
                        transform=ccrs.PlateCarree(), zorder=5)
 
+        # Observed fire perimeter
+        for poly in fire_polygons:
+            lons_p = [c[0] for c in poly]
+            lats_p = [c[1] for c in poly]
+            ax.plot(lons_p, lats_p, color='black', lw=2,
+                    transform=ccrs.PlateCarree(), zorder=7)
+
         # Station markers
         for name, (lat_s, lon_s, color) in stations.items():
             ax.plot(lon_s, lat_s, marker="*",
                     markerfacecolor="none", markeredgecolor=color,
                     markersize=18, markeredgewidth=2,
                     linestyle="none",
+                    path_effects=[pe.withStroke(linewidth=4, foreground='white')],
                     transform=ccrs.PlateCarree(), zorder=6)
 
         # Legend for simulation lines
@@ -193,6 +216,10 @@ for t in hours:
                           ls=sim["ls"], label=sim["label"])
             for sim in simulations
         ]
+        if fire_polygons:
+            legend_handles.append(
+                mlines.Line2D([], [], color='black', lw=2, label='Observed perimeter')
+            )
         ax.legend(handles=legend_handles, loc='upper left',
                   fontsize=11, framealpha=0.9, title="LFN = 0 contour")
 
