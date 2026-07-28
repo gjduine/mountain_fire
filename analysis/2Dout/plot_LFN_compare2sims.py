@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
+import matplotlib.lines as mlines
 import numpy as np
 import pandas as pd
 from netCDF4 import Dataset
@@ -20,8 +21,8 @@ plt.rcParams.update({
 # ── Simulation definitions ─────────────────────────────────────────────────────
 base = Path("/glade/derecho/scratch/gduine/mountain_fire/111m/")
 simulations = [
-    {"label": "ifire2 / ref",       "dir": base / "ifire2/ref/",       "color": "red",  "lw": 2.5},
-    {"label": "ifire2 / z0 double", "dir": base / "ifire2/z0_double/", "color": "blue", "lw": 2.5},
+    {"label": "ifire2 / ref",       "dir": base / "ifire2/ref/",       "color": "red",  "lw": 2.5, "ls": "-"},
+    {"label": "ifire2 / z0 double", "dir": base / "ifire2/z0_double/", "color": "blue", "lw": 1.5, "ls": "-"},
 ]
 domain = "d04"
 
@@ -114,7 +115,7 @@ for t in hours:
     dsets = {sim["label"]: Dataset(fnames[sim["label"]]) for sim in simulations}
     n_times = dsets[simulations[0]["label"]].dimensions["Time"].size
 
-    for itime in range(1):  # change to range(n_times) for all timesteps
+    for itime in range(n_times):  # change to range(n_times) for all timesteps
         ts               = wrf_time_to_datetime(dsets[simulations[0]["label"]], itime)
         tsPST            = ts - pd.Timedelta(hours=8)
         tWRFstrPST       = tsPST.strftime('%Y-%m-%d %H:%M')
@@ -175,6 +176,7 @@ for t in hours:
             ax.contour(flon_all, flat_all, lfn,
                        levels=[0.0],
                        colors=sim["color"], linewidths=sim["lw"],
+                       linestyles=sim["ls"],
                        transform=ccrs.PlateCarree(), zorder=5)
 
         # Station markers
@@ -186,11 +188,12 @@ for t in hours:
                     transform=ccrs.PlateCarree(), zorder=6)
 
         # Legend for simulation lines
-        legend_patches = [
-            mpatches.Patch(color=sim["color"], label=sim["label"])
+        legend_handles = [
+            mlines.Line2D([], [], color=sim["color"], lw=sim["lw"],
+                          ls=sim["ls"], label=sim["label"])
             for sim in simulations
         ]
-        ax.legend(handles=legend_patches, loc='upper left',
+        ax.legend(handles=legend_handles, loc='upper left',
                   fontsize=11, framealpha=0.9, title="LFN = 0 contour")
 
         ax.set_title(f"Fire front (LFN = 0) — {tWRFstrPST} PST", fontsize=14)
