@@ -46,9 +46,9 @@ out_dir    = Path("./LFN_compare")
 out_dir.mkdir(exist_ok=True)
 
 stations = {
-    "START":       (34.318,    -118.968,   "magenta"),
-    "SPOT":        (34.2528,   -119.0284,  "red"),
-    "Spot Valley": (34.281191, -119.015999,"limegreen"),
+    "START":          (34.318,    -118.968,   "magenta"),
+    "Spot Valley":    (34.271033, -119.015757,  "red"),
+    "Spot Camarillo": (34.256678, -119.032321,"limegreen"),
 }
 
 # ── Fuel colormap ──────────────────────────────────────────────────────────────
