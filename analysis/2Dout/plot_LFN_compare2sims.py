@@ -23,8 +23,8 @@ plt.rcParams.update({
 # ── Simulation definitions ─────────────────────────────────────────────────────
 base = Path("/glade/derecho/scratch/gduine/mountain_fire/111m/")
 simulations = [
-    {"label": "ifire2 / ref",       "dir": base / "ifire2/ref/",       "color": "red",  "lw": 2.5, "ls": "-"},
-    {"label": "ifire2 / z0 double", "dir": base / "ifire2/z0_double/", "color": "blue", "lw": 1.5, "ls": "-"},
+    {"label": "ifire2 / no roads / ref",       "dir": base / "ifire2_noroad/ref/",       "color": "red",  "lw": 2.5, "ls": "-"},
+    {"label": "ifire2 / no roads / z0 double", "dir": base / "ifire2_noroad/z0_double/", "color": "blue", "lw": 1.5, "ls": "-"},
 ]
 domain = "d04"
 
@@ -42,7 +42,7 @@ OUTPUT_DPI       = 150
 wind_arrow_skip  = 10
 wind_arrow_scale = 200
 geojson_path = Path("/glade/work/gduine/mountain_fire/perimeter/mountain_fire_perimeter.geojson")
-out_dir    = Path("./LFN_compare")
+out_dir    = Path("./LFN_compare_noroad")
 out_dir.mkdir(exist_ok=True)
 
 stations = {
