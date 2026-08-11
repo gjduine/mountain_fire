@@ -24,7 +24,7 @@ plt.rcParams.update({
 base = Path("/glade/derecho/scratch/gduine/mountain_fire/111m/")
 simulations = [
     {"label": "ifire2 / no roads / ref",       "dir": base / "ifire2_noroad/ref/",       "color": "red",  "lw": 2.5, "ls": "-"},
-    {"label": "ifire2 / no roads / z0 double", "dir": base / "ifire2_noroad/z0_double/", "color": "blue", "lw": 1.5, "ls": "-"},
+    {"label": "ifire2 / no roads / oak break", "dir": base / "ifire2_oak_break/", "color": "blue", "lw": 1.5, "ls": "-"},
 ]
 domain = "d04"
 
@@ -42,7 +42,7 @@ OUTPUT_DPI       = 150
 wind_arrow_skip  = 10
 wind_arrow_scale = 200
 geojson_path = Path("/glade/work/gduine/mountain_fire/perimeter/mountain_fire_perimeter.geojson")
-out_dir    = Path("./LFN_compare_noroad")
+out_dir    = Path("./LFN_compare_oak_break/zoom")
 out_dir.mkdir(exist_ok=True)
 
 stations = {
@@ -84,7 +84,7 @@ else:
 fuel_indexed = flat_fuel = flon_fuel = None
 
 for t in hours:
-    fname0 = simulations[0]["dir"] / f"wrfout_{domain}_{t.strftime('%Y-%m-%d_%H:00:00')}"
+    fname0 = simulations[1]["dir"] / f"wrfout_{domain}_{t.strftime('%Y-%m-%d_%H:00:00')}"
     if not fname0.exists():
         continue
     ds0     = Dataset(fname0)
