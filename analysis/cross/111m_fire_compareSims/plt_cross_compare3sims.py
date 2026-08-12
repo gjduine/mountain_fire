@@ -8,11 +8,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
-import glob
 import os
 import wrf
 from netCDF4 import Dataset
-from shapely.geometry import LineString, Point
 
 
 # In[8]:
@@ -51,16 +49,7 @@ delta_lon = half_length_km * np.sin(angle_rad) / (111.0 * np.cos(np.radians(cent
 start_lat, start_lon = center_lat - delta_lat, center_lon - delta_lon
 end_lat,   end_lon   = center_lat + delta_lat, center_lon + delta_lon
 
-# ── Fuel break geometry (for axvspan on lowest row) ───────────────────────────
-fb_endpoint1    = (34.319401, -118.993324)   # (lat, lon) NW end
-fb_endpoint2    = (34.303774, -118.964856)   # (lat, lon) SE end
-fb_width_m      = 300
-fb_buffer_deg   = (fb_width_m / 2) / 111_000
-fb_line         = LineString([(fb_endpoint1[1], fb_endpoint1[0]),
-                               (fb_endpoint2[1], fb_endpoint2[0])])
-fb_poly         = fb_line.buffer(fb_buffer_deg, cap_style=2)
-
-cos_lat  = np.cos(np.radians(center_lat))
+cos_lat = np.cos(np.radians(center_lat))
 
 # ── Plot / axis settings ───────────────────────────────────────────────────────
 g             = 9.81
@@ -73,13 +62,22 @@ north_limit_km = 10.0
 
 out_dir = '.'
 
+# ── Time selection (UTC; PST = UTC − 8 h) ─────────────────────────────────────
+start_time_UTC = pd.Timestamp('2024-11-07 00:00')
+end_time_UTC   = pd.Timestamp('2024-11-07 06:00')
+hours          = pd.date_range(start_time_UTC, end_time_UTC, freq='1H')
+
 
 # In[10]:
 
 
-# ── Static setup: terrain + cross-section path (from ref) ─────────────────────
-ref_files = sorted(glob.glob(os.path.join(simulations[0]['dir'], f'wrfout_{domain}_*')))
-print(f'Found {len(ref_files)} reference files')
+# ── Static setup: terrain + cross-section path (from first available file) ─────
+# Find first file that exists to initialise static fields
+ref_dir = simulations[0]['dir']
+ref_files = [os.path.join(ref_dir, f'wrfout_{domain}_{t.strftime("%Y-%m-%d_%H:00:00")}')
+             for t in hours]
+ref_files = [f for f in ref_files if os.path.exists(f)]
+print(f'Files to plot: {len(ref_files)}')
 
 with Dataset(ref_files[0]) as nc0:
     ter         = wrf.getvar(nc0, 'ter', -1)
@@ -93,19 +91,38 @@ nx_cross = len(ter_line)
 dist_1d  = np.linspace(xlim1, xlim2, nx_cross)
 print(f'Cross-section: {nx_cross} grid points')
 
-# Project fuel break polygon onto cross-section dist axis
-fb_mask = np.array([
-    fb_poly.contains(Point(
-        center_lon + d * np.sin(angle_rad) / (111.0 * cos_lat),
-        center_lat + d * np.cos(angle_rad) / 111.0
-    )) for d in dist_1d
-])
-if fb_mask.any():
-    fb_x_min = dist_1d[fb_mask].min()
-    fb_x_max = dist_1d[fb_mask].max()
-else:
-    fb_x_min = fb_x_max = None
-    print('Warning: fuel break polygon does not intersect cross-section')
+# ── Fuel break location from oak-break wrfout (NFUEL_CAT on fire subgrid) ─────
+oak_first = os.path.join(simulations[2]['dir'],
+                         f'wrfout_{domain}_{hours[0].strftime("%Y-%m-%d_%H:00:00")}')
+fb_x_min = fb_x_max = None
+if os.path.exists(oak_first):
+    with Dataset(oak_first) as nc_oak:
+        fuelvar  = 'FUEL_CAT' if 'FUEL_CAT' in nc_oak.variables else 'NFUEL_CAT'
+        nfuel_ok = nc_oak.variables[fuelvar][0, :, :]
+        fxlat    = nc_oak.variables['FXLAT'][0, :, :]
+        fxlon    = nc_oak.variables['FXLONG'][0, :, :]
+    with Dataset(ref_files[0]) as nc_ref:
+        nfuel_ref = nc_ref.variables[fuelvar][0, :, :]
+
+    # Cells that were changed for the oak break
+    changed = nfuel_ok != nfuel_ref
+
+    # Project fire-grid points onto the cross-section axis
+    dx_km   = (fxlon - center_lon) * 111.0 * cos_lat
+    dy_km   = (fxlat - center_lat) * 111.0
+    d_along = dx_km * np.sin(angle_rad) + dy_km * np.cos(angle_rad)
+    d_perp  = dx_km * np.cos(angle_rad) - dy_km * np.sin(angle_rad)
+
+    # Keep changed cells within 0.5 km of the section and within the plot range
+    near_section = changed & (np.abs(d_perp) < 0.5) & \
+                   (d_along >= xlim1) & (d_along <= xlim2)
+
+    if near_section.any():
+        fb_x_min = float(d_along[near_section].min())
+        fb_x_max = float(d_along[near_section].max())
+        print(f'Fuel break on cross-section: {fb_x_min:.2f} to {fb_x_max:.2f} km')
+    else:
+        print('Warning: no changed fuel cells found near cross-section')
 
 
 # In[11]:
