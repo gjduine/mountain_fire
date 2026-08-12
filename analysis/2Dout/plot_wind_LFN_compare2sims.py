@@ -22,8 +22,8 @@ plt.rcParams.update({
 # ── Simulation definitions ─────────────────────────────────────────────────────
 base = Path("/glade/derecho/scratch/gduine/mountain_fire/111m/")
 simulations = [
-    {"label": "ifire2 / ref",       "dir": base / "ifire2/ref/",       "color": "red",  "lw": 2.5, "ls": "-"},
-    {"label": "ifire2 / z0 double", "dir": base / "ifire2/z0_double/", "color": "blue", "lw": 1.5, "ls": "-"},
+    {"label": "ifire2 / no roads / ref",       "dir": base / "ifire2_noroad/ref/",       "color": "red",  "lw": 2.5, "ls": "-"},
+    {"label": "ifire2 / no roads / oak break", "dir": base / "ifire2_oak_break/", "color": "blue", "lw": 1.5, "ls": "-"},
 ]
 domain = "d04"
 
@@ -37,8 +37,8 @@ lon_min, lon_max = -119.05, -118.95
 dy = np.arange(34.25,  34.35,  0.02)
 dx = np.arange(-119.05, -118.95, 0.03)
 
-wind_arrow_skip  = 15
-wind_arrow_scale = 350
+wind_arrow_skip  = 10
+wind_arrow_scale = 200
 OUTPUT_DPI       = 150
 
 # Wind speed colormap (left panel)
@@ -92,7 +92,7 @@ for t in hours:
     dsets   = {sim["label"]: Dataset(fnames[sim["label"]]) for sim in simulations}
     n_times = dsets[simulations[0]["label"]].dimensions["Time"].size
 
-    for itime in range(n_times):
+    for itime in range(1): # range(n_times):
         ts               = wrf_time_to_datetime(dsets[simulations[0]["label"]], itime)
         tsPST            = ts - pd.Timedelta(hours=8)
         tWRFstrPST       = tsPST.strftime('%Y-%m-%d %H:%M')
@@ -140,13 +140,13 @@ for t in hours:
         )
         axes[0].set_title(f"Wind speed — ifire2/ref\n{tWRFstrPST} PST", fontsize=13)
 
-        # Right: wind speed difference (z0_double − ref)
+        # Right: wind speed difference (oak break − ref)
         cf_diff = axes[1].contourf(
             to_np(lons), to_np(lats), wspd_diff,
             levels=diff_levels, cmap=diff_cmap, extend='both',
             transform=ccrs.PlateCarree(), zorder=1
         )
-        axes[1].set_title(f"Wind speed difference (z0 double − ref)\n{tWRFstrPST} PST", fontsize=13)
+        axes[1].set_title(f"Wind speed difference (oak fuel break − ref)\n{tWRFstrPST} PST", fontsize=13)
 
         # Wind vectors (ref) on both panels
         sk = wind_arrow_skip
